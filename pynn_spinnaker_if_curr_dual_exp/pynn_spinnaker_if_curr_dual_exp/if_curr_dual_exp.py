@@ -1,5 +1,13 @@
+# Import modules
+from pynn_spinnaker.spinnaker import lazy_param_map
+from pynn_spinnaker.spinnaker import regions
+
 # Import classes
 from pyNN.standardmodels.cells import StandardCellType
+
+# Import functions
+from copy import deepcopy
+from pyNN.standardmodels import build_translations
 
 # Import globals
 from pynn_spinnaker.standardmodels.cells import (if_curr_neuron_translations,
