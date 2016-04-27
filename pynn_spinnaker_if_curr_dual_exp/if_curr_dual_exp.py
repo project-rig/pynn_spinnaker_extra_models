@@ -69,6 +69,7 @@ class IF_curr_dual_exp(StandardCellType):
         "isyn_exc2": "nA",
         "isyn_inh": "nA",
     }
+    receptor_types = ("excitatory", "inhibitory", "excitatory2")
 
     # How many of these neurons per core can
     # a SpiNNaker neuron processor handle
