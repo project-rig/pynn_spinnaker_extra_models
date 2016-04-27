@@ -16,7 +16,7 @@ SOURCES = $(PYNN_SPINNAKER_RUNTIME_DIR)/common/config.cpp \
 CFLAGS += -I $(CURDIR) -I $(PYNN_SPINNAKER_RUNTIME_DIR)
 
 # Override directory APLX gets loaded into so it's within module
-APP_DIR = ../../../binaries
+APP_DIR = ../../binaries
 
 # Include base Makefile
 include $(PYNN_SPINNAKER_RUNTIME_DIR)/Makefile.depend
