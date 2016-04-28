@@ -72,10 +72,11 @@ class IF_curr_ca2_adaptive_exp(StandardCellType):
         "cm"         : 1.0,     # Capacity of the membrane in nF
         "tau_m"      : 20.0,    # Membrane time constant in ms.
         "tau_refrac" : 0.1,     # Duration of refractory period in ms.
-        "tau_ca2"    : 50.0,    # Time contant of CA2 adaption current
+        "tau_ca2"    : 50.0,    # Time contant of CA2 adaption current in ms
         "tau_syn_E"  : 5.0,     # Decay time of excitatory synaptic current in ms.
         "tau_syn_I"  : 5.0,     # Decay time of inhibitory synaptic current in ms.
         "i_offset"   : 0.0,     # Offset current in nA
+        "i_alpha"    : 0.1,     # Influx of CA2 caused by each spike in nA
         "v_reset"    : -65.0,   # Reset potential after a spike in mV.
         "v_thresh"   : -50.0,   # Spike threshold in mV.
     }

@@ -6,12 +6,18 @@
 # Journal of Computational Neuroscience, 10(1), 25-45.
 # doi:10.1023/A:1008916026143
 # -----------------------------------------------------------------------------
+import logging
 import math
 import numpy
 import pylab
 
-import spynnaker.pyNN as sim
-import spynnaker_extra_pynn_models as q
+import pynn_spinnaker as sim
+from pynn_spinnaker_if_curr_ca2_adaptive import IF_curr_ca2_adaptive_exp
+
+logger = logging.getLogger("pynn_spinnaker")
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
+
 
 # Timestep (ms)
 # **NOTE** the 2.5Khz input frequency is not going to work particularily well
@@ -25,31 +31,28 @@ N = 300
 T = 250
 
 # Setup simulator
-sim.setup(timestep=dt, min_delay=1.0, max_delay=4.0)
+sim.setup(timestep=dt, min_delay=dt, max_delay=dt * 7, spinnaker_hostname="192.168.1.1")
 
 # Create population of neurons
-cell = sim.Population(N, q.IF_curr_exp_ca2_adaptive,
-                      {"tau_m": 20.0, "cm": 0.5,
-                       "v_rest": -70.0, "v_reset": -60.0, "v_thresh": -54.0,
-                       "i_alpha": 0.1, "tau_ca2": 50.0})
+cell = sim.Population(N, IF_curr_ca2_adaptive_exp(tau_m=20.0, cm=0.5,
+                                                  v_rest=-70.0, v_reset=-60.0,
+                                                  v_thresh=-54.0, i_alpha=0.1,
+                                                  tau_ca2=50.0))
 
 # Create poisson spike source
-spike_source = sim.Population(N, sim.SpikeSourcePoisson, {"rate": 2500.0})
+spike_source = sim.Population(N, sim.SpikeSourcePoisson(rate=2500.0))
 
 sim.Projection(spike_source, cell,
-               sim.OneToOneConnector(weights=0.1, delays=0.1),
-               target="excitatory")
+               sim.OneToOneConnector(),
+               sim.StaticSynapse(weight=0.1, delay=dt),
+               receptor_type="excitatory")
 
-cell.record()
+cell.record("spikes")
 # cell.record_gsyn()
 
 sim.run(T)
 
-spike_times = cell.getSpikes(compatible_output=True)
-# ca2 = cell.get_gsyn(compatible_output=True)
-
-# Split into list of spike times for each neuron
-neuron_spikes = [spike_times[spike_times[:, 0] == n, 1] for n in range(N)]
+data = cell.get_data()
 
 # Calculate isis and pair these with bin index of last spike time in pair
 # **NOTE** using first spike time in pair leads to a dip at the
@@ -58,7 +61,7 @@ binned_isis = numpy.hstack([
     numpy.vstack(
         (t[1:] - t[:-1],
          numpy.digitize(t[1:], numpy.arange(T)) - 1))
-    for t in neuron_spikes])
+    for t in data.segments[0].spiketrains])
 
 # Split ISIs into seperate array for each time bin
 time_binned_isis = [binned_isis[0, binned_isis[1] == t] for t in range(T)]
