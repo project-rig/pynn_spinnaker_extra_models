@@ -1,16 +1,16 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="pynn_spinnaker_if_curr_dual_exp",
+    name="pynn_spinnaker_if_curr_ca2_adaptive",
     version="0.1",
     packages=find_packages(),
-    package_data={'pynn_spinnaker_if_curr_dual_exp': ['binaries/*.aplx']},
+    package_data={'pynn_spinnaker_if_curr_ca2_adaptive': ['binaries/*.aplx']},
 
     # Metadata for PyPi
     url="https://github.com/project-rig/pynn_spinnaker_extra_models",
     author="University of Manchester",
-    description="Plugin for PyNN SpiNNaker to provide support for neuron models "
-                "with two excitatory synapses e.g. for AMPA and NMDA synapses",
+    description="Plugin for PyNN SpiNNaker to provide support for neuron "
+                "model with simple spike-frequency adaption.",
     license="GPLv2",
     classifiers=[
         "Development Status :: 3 - Alpha",
