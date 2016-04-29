@@ -100,10 +100,8 @@ class IF_curr_ca2_adaptive_exp(StandardCellType):
     # a SpiNNaker neuron processor handle
     max_neurons_per_core = 1024
 
-    # JK: not necessary
     neuron_region_class = regions.Neuron
-    synapse_region_class = regions.Synapse
-
+    
     directly_connectable = False
 
     translations = deepcopy(if_curr_ca2_adaptive_neuron_translations)
