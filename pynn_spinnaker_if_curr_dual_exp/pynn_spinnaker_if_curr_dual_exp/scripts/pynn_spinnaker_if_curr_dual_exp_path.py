@@ -5,11 +5,11 @@ Installed as "pynn_spinnaker_if_curr_dual_exp_path" by setuptools.
 """
 
 import os.path
-import pynn_spinnaker_if_curr_dual_exp
+from pynn_spinnaker_if_curr_dual_exp import __file__ as f
 import sys
 
 def main(args=None):
-    print(os.path.dirname(pynn_spinnaker_if_curr_dual_exp.__file__))
+    print(os.path.dirname(f))
     return 0
 
 if __name__ == "__main__":  # pragma: no cover
