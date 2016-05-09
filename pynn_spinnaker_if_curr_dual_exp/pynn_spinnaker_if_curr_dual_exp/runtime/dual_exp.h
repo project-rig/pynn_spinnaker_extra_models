@@ -36,19 +36,19 @@ public:
   struct ImmutableState
   {
     // Excitatory decay constants
-    S1615 m_ExpTauSynExc;
+    U032 m_ExpTauSynExc;
 
     // Excitatory scale
     S1615 m_InitExc;
 
     // Second excitatory decay constants
-    S1615 m_ExpTauSynExc2;
+    U032 m_ExpTauSynExc2;
 
     // Second excitatory scale
     S1615 m_InitExc2;
 
     // Inhibitory decay constant
-    S1615 m_ExpTauSynInh;
+    U032 m_ExpTauSynInh;
 
     // Inhibitory scale
     S1615 m_InitInh;
@@ -88,10 +88,9 @@ public:
   static inline void Shape(MutableState &mutableState, const ImmutableState &immutableState)
   {
     // Decay both currents
-    // **TODO** Are m_ExpTauSynExc and m_ExpTauSynInh always going to be 16 bits? If so, can we use 16x32 DSP multiply
-    mutableState.m_ISynExc = MulS1615(mutableState.m_ISynExc, immutableState.m_ExpTauSynExc);
-    mutableState.m_ISynInh = MulS1615(mutableState.m_ISynInh, immutableState.m_ExpTauSynInh);
-    mutableState.m_ISynExc2 = MulS1615(mutableState.m_ISynExc2, immutableState.m_ExpTauSynExc2);
+    mutableState.m_ISynExc = MulS1615U032(mutableState.m_ISynExc, immutableState.m_ExpTauSynExc);
+    mutableState.m_ISynInh = MulS1615U032(mutableState.m_ISynInh, immutableState.m_ExpTauSynInh);
+    mutableState.m_ISynExc2 = MulS1615U032(mutableState.m_ISynExc2, immutableState.m_ExpTauSynExc2);
   }
 
   static void Print(char *stream, const MutableState &mutableState, const ImmutableState &immutableState)
@@ -102,11 +101,11 @@ public:
     io_printf(stream, "\t\tm_ISynInh        = %11.4k [nA]\n", mutableState.m_ISynInh);
 
     io_printf(stream, "\tImmutable state:\n");
-    io_printf(stream, "\t\tExpTauSynExc      = %11.4k\n", immutableState.m_ExpTauSynExc);
+    io_printf(stream, "\t\tExpTauSynExc      = %11.4k\n", (S1615)(immutableState.m_ExpTauSynExc >> 17));
     io_printf(stream, "\t\tInitExc           = %11.4k [nA]\n", immutableState.m_InitExc);
-    io_printf(stream, "\t\tExpTauSynInh      = %11.4k\n", immutableState.m_ExpTauSynInh);
+    io_printf(stream, "\t\tExpTauSynInh      = %11.4k\n", (S1615)(immutableState.m_ExpTauSynInh >> 17));
     io_printf(stream, "\t\tInitInh           = %11.4k [nA]\n", immutableState.m_InitInh);
-    io_printf(stream, "\t\tExpTauSynExc2     = %11.4k\n", immutableState.m_ExpTauSynExc2);
+    io_printf(stream, "\t\tExpTauSynExc2     = %11.4k\n", (S1615)(immutableState.m_ExpTauSynExc2 >> 17));
     io_printf(stream, "\t\tInitExc2          = %11.4k [nA]\n", immutableState.m_InitExc2);
   }
 };
