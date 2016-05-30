@@ -29,40 +29,28 @@ public:
   //-----------------------------------------------------------------------------
   // Public API
   //-----------------------------------------------------------------------------
-  PostTrace UpdatePostTrace(uint32_t tick, PostTrace lastTrace, uint32_t lastTick) const
+  PostTrace UpdatePostTrace(uint32_t, PostTrace, uint32_t) const
   {
-    // Get time since last spike
-    uint32_t elapsedTicks = tick - lastTick;
+    // Pick random number and use to draw from exponential distribution
+    uint32_t random = (m_RNG.GetNext() & (S2011One - 1));
+    uint32_t windowLength = m_PostExpDistLookup[random];
+    LOG_PRINT(LOG_LEVEL_TRACE, "\tResetting post-window: random=%d, window_length=%u",
+              random, windowLength);
 
-    // Decay previous trace
-    int32_t newTrace = Mul16S2011(lastTrace, m_TauMinusLUT.Get(elapsedTicks));
-
-    // Add energy caused by new spike to trace
-    newTrace += S2011One;
-
-    LOG_PRINT(LOG_LEVEL_TRACE, "\tElapsed ticks:%d, New trace:%d",
-              elapsedTicks, newTrace);
-
-    // Return new trace_value
-    return (PostTrace)newTrace;
+    // Return window length
+    return (PostTrace)windowLength;
   }
 
-  PreTrace UpdatePreTrace(uint32_t tick, PreTrace lastTrace, uint32_t lastTick) const
+  PreTrace UpdatePreTrace(uint32_t, PreTrace, uint32_t) const
   {
-    // Get time since last spike
-    uint32_t elapsedTicks = tick - lastTick;
+    // Pick random number and use to draw from exponential distribution
+    uint32_t random = (m_RNG.GetNext() & (S2011One - 1));
+    uint32_t windowLength = m_PreExpDistLookup[random];
+    LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tResetting pre-window: random=%d, window_length=%u",
+              random, windowLength);
 
-    // Decay previous trace
-    int32_t newTrace = Mul16S2011(lastTrace, m_TauPlusLUT.Get(elapsedTicks));
-
-    // Add energy caused by new spike to trace
-    newTrace += S2011One;
-
-    LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tElapsed ticks:%d, New trace:%d",
-              elapsedTicks, newTrace);
-
-    // Return new trace_value
-    return (PreTrace)newTrace;
+    // Return window length
+    return (PreTrace)windowLength;
   }
 
   template<typename D, typename P>
@@ -93,18 +81,12 @@ public:
                       uint32_t, PostTrace)
   {
     // Get time of event relative to last pre-synaptic event
-    uint32_t elapsedTicksSinceLastPre = time - lastPreTime;
-    if (elapsedTicksSinceLastPre > 0)
-    {
-        S2011 decayedPreTrace = Mul16S2011(
-          lastPreTrace, m_TauPlusLUT.Get(elapsedTicksSinceLastPre));
+    uint32_t timeSinceLastPre = time - lastPreTime;
 
-        LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\t\tElapsed ticks since last pre:%u, last pre trace:%d, decayed pre trace=%d",
-                  elapsedTicksSinceLastPre, lastPreTrace, decayedPreTrace);
+    LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\t\ttime since last pre:%u, pre window length:%u",
+              timeSinceLastPre, lastPreTrace);
 
-        // Apply potentiation
-        applyPotentiation(decayedPreTrace);
-    }
+    applyPotentiation(lastPreTrace, timeSinceLastPre);
   }
 
   bool ReadSDRAMData(uint32_t *&region, uint32_t)
@@ -121,7 +103,6 @@ public:
     }
     m_RNG.SetState(seed);
 
-
     m_TauPlusLUT.ReadSDRAMData(region);
     m_TauMinusLUT.ReadSDRAMData(region);
     return true;
@@ -133,6 +114,9 @@ private:
   //-----------------------------------------------------------------------------
   int32_t m_AccumulatorDepressionPlusOne;
   int32_t m_AccumulatorPotentiationMinusOne;
+
+  uint16_t m_PreExpDistLookup[S2011One];
+  uint16_t m_PostExpDistLookup[S2011One];
 
   R m_RNG;
 };

@@ -6,14 +6,10 @@
 //-----------------------------------------------------------------------------
 // SynapseProcessor::Plasticity::SynapseStructure::Weight
 //-----------------------------------------------------------------------------
-namespace SynapseProcessor
-{
-namespace Plasticity
-{
-namespace SynapseStructures
+namespace ExtraModels
 {
 template<typename W>
-class Weight
+class WeightAccumulator
 {
 public:
   //-----------------------------------------------------------------------------
@@ -66,7 +62,30 @@ public:
 
   void ApplyPotentiation(int32_t potentiation, const WeightDependence &weightDependence)
   {
-    m_WeightState.ApplyPotentiation(potentiation, weightDependence);
+    // **TODO** decay accumulator
+    // If spikes don't coincide
+    if (timeSinceLastPre > 0)
+    {
+      // If this post-spike has arrived within the last pre window
+      if (timeSinceLastPre < lastPreTrace)
+
+        if (m_Accumulator < weightDependence.GetAccumulatorPotentiationMinusOne())
+        {
+          // If accumulator's not going to hit potentiation limit, increment it
+          m_Accumulator++;
+          LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\t\t\tIncrementing accumulator=%d",
+                    previous_state.accumulator);
+        }
+        else
+        {
+          // Otherwise, reset accumulator and apply potentiation
+          LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\t\t\tApplying potentiation");
+
+          m_Accumulator = 0;
+          m_WeightState.ApplyPotentiation();
+        }
+      }
+    }
   }
 
   FinalState CalculateFinalState(const WeightDependence &weightDependence) const
@@ -79,7 +98,6 @@ private:
   // Members
   //-----------------------------------------------------------------------------
   typename WeightDependence::WeightState m_WeightState;
+  int32_t m_Accumulator;
 };
-} // SynapseStructure
-} // Plasticity
-} // SynapseProcessor
+} // ExtraModels
