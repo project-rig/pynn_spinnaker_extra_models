@@ -6,13 +6,12 @@
 
 // Common includes
 #include "common/exp_decay_lut.h"
+#include "common/fixed_point_number.h"
+#include "common/inverse_transform_sample_lut.h"
 #include "common/log.h"
 
 // Synapse processor includes
 #include "synapse_processor/plasticity/post_events.h"
-
-// BCPNN includes
-#include "ln_lut.h"
 
 // Namespaces
 using namespace Common::FixedPointNumber;
@@ -24,7 +23,8 @@ namespace ExtraModels
 {
 template<typename C, unsigned int D, unsigned int I,
   unsigned int TauALUTNumEntries, unsigned int TauALUTShift,
-  unsigned int T>
+  unsigned int T,
+  typename RNG>
 class RecurrentSTDP
 {
 private:
@@ -48,6 +48,7 @@ private:
   typedef uint16_t PreTrace;
   typedef uint16_t PostTrace;
   typedef SynapseProcessor::Plasticity::PostEventHistory<PostTrace, T> PostEventHistory;
+  typedef Common::InverseTransformSampleLUT<11, uint16_t, uint32_t, RNG> ExpDistLUT;
 
   //-----------------------------------------------------------------------------
   // Constants
@@ -62,7 +63,7 @@ public:
   //-----------------------------------------------------------------------------
   // One word for a synapse-count, two delay words, a time of last update, 
   // time and trace associated with last presynaptic spike and 512 synapses
-  static const unsigned int MaxRowWords = 517 + PreTraceWords;
+  static const unsigned int MaxRowWords = 256 + 5 + PreTraceWords;
 
   //-----------------------------------------------------------------------------
   // Public methods
@@ -122,7 +123,7 @@ public:
       const uint32_t postIndex = GetIndex(controlWord);
 
       // Extract accumulator and weight components of plastic word
-      S accumulator = (int32_t)plasticWords->m_HalfWords[1];
+      S2011 accumulator = (int32_t)plasticWords->m_HalfWords[1];
       int32_t weight = (int32_t)plasticWords->m_HalfWords[0];
 
       // Apply accumulator decay
@@ -176,7 +177,7 @@ public:
         // Apply pre-synaptic spike to synapse
         ApplyPreSpike(delayedPreTick,
                      postWindow.GetPrevTime(), postWindow.GetPrevTrace(),
-                     accumulator, weight)
+                     accumulator, weight);
       }
 
       // If this isn't a flush, add weight to ring-buffer
@@ -199,7 +200,7 @@ public:
   void AddPostSynapticSpike(uint tick, unsigned int neuronID)
   {
     // If neuron ID is valid
-    if(neuronID < 512)
+    if(neuronID < 256)
     {
       LOG_PRINT(LOG_LEVEL_TRACE, "Adding post-synaptic event to trace at tick:%u",
                 tick);
@@ -225,20 +226,33 @@ public:
   {
     LOG_PRINT(LOG_LEVEL_INFO, "ExtraModels::RecurrentSTDP::ReadSDRAMData");
 
-     // Read RNG seed
-    uint32_t seed[R::StateSize];
+    // Read RNG seed
+    uint32_t seed[RNG::StateSize];
     LOG_PRINT(LOG_LEVEL_TRACE, "\tSeed:");
-    for(unsigned int s = 0; s < R::StateSize; s++)
+    for(unsigned int s = 0; s < RNG::StateSize; s++)
     {
       seed[s] = *region++;
       LOG_PRINT(LOG_LEVEL_TRACE, "\t\t%u", seed[s]);
     }
     m_RNG.SetState(seed);
-    
-    LOG_PRINT(LOG_LEVEL_INFO, "\tAi:%d, Aj:%d, Aij:%d, epsilon:%d, epsilon squared:%d, phi:%d, max weight:%d, mode:%08x",
-              m_Ai, m_Aj, m_Aij, m_Epsilon, m_EpsilonSquared, m_PHI, m_MaxWeight, m_Mode);
 
-    m_TauPLUT.ReadSDRAMData(region);
+    // Read parameters
+    m_MinWeight = *reinterpret_cast<int32_t*>(region++);
+    m_MaxWeight = *reinterpret_cast<int32_t*>(region++);
+    m_A2Plus = *reinterpret_cast<S2011*>(region++);
+    m_A2Minus = *reinterpret_cast<S2011*>(region++);
+    m_AccumulateIncrease = *reinterpret_cast<S2011*>(region++);
+    m_AccumulateDecrease = *reinterpret_cast<S2011*>(region++);
+
+    LOG_PRINT(LOG_LEVEL_INFO, "\tMin weight:%d, Max weight:%d, A2+:%d, A2-:%d, Accumulator increase:%d, Accumulator decrease:%d",
+              m_MinWeight, m_MaxWeight, m_A2Plus, m_A2Minus, m_AccumulateIncrease, m_AccumulateDecrease);
+
+    // Read inverse-CDF lookup tables
+    m_PreExpDistLUT.ReadSDRAMData(region);
+    m_PostExpDistLUT.ReadSDRAMData(region);
+
+    // ReadExponential lookup tables
+    m_TauALUT.ReadSDRAMData(region);
 
     return true;
   }
@@ -247,25 +261,23 @@ private:
   //-----------------------------------------------------------------------------
   // Private methods
   //-----------------------------------------------------------------------------
-  PostTrace UpdatePostTrace(uint32_t, PostTrace, uint32_t) const
+  PostTrace UpdatePostTrace(uint32_t, PostTrace, uint32_t)
   {
     // Pick random number and use to draw from exponential distribution
-    uint32_t random = (m_RNG.GetNext() & (S2011One - 1));
-    uint32_t windowLength = m_PostExpDistLookup[random];
-    LOG_PRINT(LOG_LEVEL_TRACE, "\tResetting post-window: random=%d, window_length=%u",
-              random, windowLength);
+    uint32_t windowLength = m_PostExpDistLUT.Get(m_RNG);
+    LOG_PRINT(LOG_LEVEL_TRACE, "\tResetting post-window length: %u",
+              windowLength);
 
     // Return window length
     return (PostTrace)windowLength;
   }
 
-  PreTrace UpdatePreTrace(uint32_t, PreTrace, uint32_t) const
+  PreTrace UpdatePreTrace(uint32_t, PreTrace, uint32_t)
   {
     // Pick random number and use to draw from exponential distribution
-    uint32_t random = (m_RNG.GetNext() & (S2011One - 1));
-    uint32_t windowLength = m_PreExpDistLookup[random];
-    LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tResetting pre-window: random=%d, window_length=%u",
-              random, windowLength);
+    uint32_t windowLength = m_PreExpDistLUT.Get(m_RNG);
+    LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tResetting pre-window length: %u",
+              windowLength);
 
     // Return window length
     return (PreTrace)windowLength;
@@ -289,7 +301,7 @@ private:
       {
         // Apply accumulator increase
         accumulator -= m_AccumulateDecrease;
-        LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\t\t\tAccumulator = %d", accumulator");
+        LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\t\t\tAccumulator = %d", accumulator);
 
         // If it's less than -1
         if (accumulator <= -S2011One)
@@ -325,7 +337,7 @@ private:
       {
         // Apply accumulator increase
         accumulator += m_AccumulateIncrease;
-        LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\t\t\tAccumulator = %d", accumulator");
+        LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\t\t\tAccumulator = %d", accumulator);
 
         // If it's greater than one
         if (accumulator >= S2011One)
@@ -397,18 +409,29 @@ private:
   //-----------------------------------------------------------------------------
   // Members
   //-----------------------------------------------------------------------------
+  // Random number generator
+  RNG m_RNG;
+
+  // Weight limits
+  int32_t m_MinWeight;
+  int32_t m_MaxWeight;
+
+  // Size of each weight update
   S2011 m_A2Plus;
   S2011 m_A2Minus;
 
-  uint16_t m_PreExpDistLookup[S2011One];
-  uint16_t m_PostExpDistLookup[S2011One];
+  // Size of each accumulator step
+  S2011 m_AccumulateIncrease;
+  S2011 m_AccumulateDecrease;
 
-  R m_RNG;
-
-  // Event history
-  PostEventHistory m_PostEventHistory[512];
+  // Inverse-CDF lookup tables
+  ExpDistLUT m_PreExpDistLUT;
+  ExpDistLUT m_PostExpDistLUT;
 
   // Exponential lookup tables
   Common::ExpDecayLUT<TauALUTNumEntries, TauALUTShift> m_TauALUT;
+
+  // Event history
+  PostEventHistory m_PostEventHistory[256];
 };
 } // BCPNN
