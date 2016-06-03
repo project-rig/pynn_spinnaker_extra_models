@@ -1,4 +1,4 @@
-PYNN_APP = synapse_recurrent_stdp
+PYNN_APP = synapse_recurrentstdpsynapse
 
 # Find PyNN SpiNNaker directory
 PYNN_SPINNAKER_DIR := $(shell pynn_spinnaker_path)
