@@ -101,7 +101,7 @@ class RecurrentSTDPSynapse(StandardSynapseType):
 
     comparable_param_names = ("w_min", "w_max", "A_plus", "A_minus",
                               "accumulator_increase", "accumulator_decrease",
-                              "tau_pre", "tau_post", "tau_a")
+                              "lambda_pre", "lambda_post", "tau_a")
 
     # How many post-synaptic neurons per core can a
     # SpiNNaker synapse_processor of this type handle
