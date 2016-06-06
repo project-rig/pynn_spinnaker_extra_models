@@ -4,6 +4,7 @@ import math
 import numpy as np
 from pynn_spinnaker.spinnaker import lazy_param_map
 from pynn_spinnaker.spinnaker import regions
+import scipy.stats
 
 # Import classes
 from pyNN.standardmodels.synapses import StandardSynapseType
@@ -16,6 +17,17 @@ from pynn_spinnaker.spinnaker.utils import get_homogeneous_param
 
 # Import globals
 from pynn_spinnaker.simulator import state
+
+# Generate a LUT for inverse transform sampling of exponential distribution
+def integer_exp_dist_its_lut(mean, **kwargs):
+    # Assert that mean is is_homogeneous
+    assert mean.is_homogeneous
+    mean = mean.evaluate(simplify=True)
+
+    # Bind the mean to the correct PPF generator and use to generate an
+    # inverse transform LUT from probabilities expressed with 11 fractional bits
+    return la.rint(lazy_param_map.its_lut(
+        partial(scipy.stats.expon.ppf, scale=mean), 11))
 
 # ------------------------------------------------------------------------------
 # RecurrentSTDPSynapse
@@ -92,8 +104,8 @@ class RecurrentSTDPSynapse(StandardSynapseType):
         ("accumulator_increase",  "i4", lazy_param_map.s2211),
         ("accumulator_decrease",  "i4", lazy_param_map.s2211),
 
-        ("lambda_pre",            "2048i2", lazy_param_map.s411_exp_dist_its_lut),
-        ("lambda_post",           "2048i2", lazy_param_map.s411_exp_dist_its_lut),
+        ("lambda_pre",            "2048i2", integer_exp_dist_its_lut),
+        ("lambda_post",           "2048i2", integer_exp_dist_its_lut),
 
         ("tau_a",                 "1500i2", partial(lazy_param_map.s411_exp_decay_lut,
                                                     num_entries=1500, time_shift=5)),
