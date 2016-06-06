@@ -72,7 +72,7 @@ public:
   bool ProcessRow(uint tick, uint32_t (&dmaBuffer)[MaxRowWords], uint32_t *sdramRowAddress, bool flush,
                   F applyInputFunction, E addDelayRowFunction, R writeBackRowFunction)
   {
-    LOG_PRINT(LOG_LEVEL_TRACE, "\tProcessing BCPNN row with %u synapses at tick:%u (flush:%u)",
+    LOG_PRINT(LOG_LEVEL_TRACE, "\tProcessing recurrent STDP row with %u synapses at tick:%u (flush:%u)",
               dmaBuffer[0], tick, flush);
 
     // If this row has a delay extension, call function to add it
