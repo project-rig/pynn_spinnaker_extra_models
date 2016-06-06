@@ -5,8 +5,10 @@ Simple Associative Memory
 import pynn_spinnaker as p
 import pynn_spinnaker_recurrent_stdp as r
 import numpy, pylab
+from pyNN.utility.plotting import Figure, Panel
 
-p.setup(timestep=1.0, min_delay = 1.0, max_delay = 15.0, spalloc_num_boards=1)
+#p.setup(timestep=1.0, min_delay = 1.0, max_delay = 15.0, spalloc_num_boards=1)
+p.setup(timestep=1.0, min_delay = 1.0, max_delay = 15.0, spinnaker_hostname="192.168.1.1")
 
 nSourceNeurons = 1 # number of input (excitatory) neurons
 nExcitNeurons  = 1 # number of excitatory neurons in the recurrent memory
@@ -55,65 +57,36 @@ source_pop = p.Population(nSourceNeurons, p.SpikeSourceArray(spike_times=arrayEn
 excit_pop = p.Population(nExcitNeurons, p.IF_curr_exp(**cell_params_lif), label='excit_pop')
 teaching_pop = p.Population(nTeachNeurons, p.SpikeSourceArray(spike_times=teachlist), label='teaching_ss_array')
 
-'''w_min",                 "w_min"),
-        ("w_max",                 "w_max"),
-        ("A_plus",                "a_plus"),
-        ("A_minus",               "a_minus"),
-
-        ("accumulator_increase",  "accumulator_increase"),
-        ("accumulator_decrease",  "accumulator_decrease"),
-
-        ("lambda_pre",            "lambda_pre"),
-        ("lambda_post",           "lambda_post"),
-
-        ("tau_a",                 "tau_a'''
 plastic_connection = p.Projection(source_pop, excit_pop,
                                   p.AllToAllConnector(),
                                   r.RecurrentSTDPSynapse(w_min=0.0, w_max=16.0, A_plus=0.2, A_minus=0.2,
                                                          accumulator_increase=1.0 / 3.0, accumulator_decrease=1.0 / 6.0,
                                                          lambda_pre=10.0, lambda_post=10.0,
-                                                         tau_a=200.0
+                                                         tau_a=200.0,
                                                          weight=baseline_excit_weight, delay=1.0),
                                   receptor_type='excitatory')
 
 p.Projection(teaching_pop, excit_pop, p.OneToOneConnector(), p.StaticSynapse(weight=weight_to_force_firing, delay=1.0), receptor_type='excitatory')
 
-populations[excit].record_v()
-populations[excit].record()
+excit_pop.record("v")
+excit_pop.record("spikes")
 
 p.run(runTime)
 
-final_weights = plastic_connection.getWeights()
+final_weights = plastic_connection.get("weight", format="list", with_address=False)
 print "Final weights: ", final_weights
 
-v = populations[excit].get_v(compatible_output=True)tput=True)
-spikes = populations[excit].getSpikes(compatible_output=True)
+excit_data = excit_pop.get_data().segments[0]
+p.end()
 
-if spikes != None:
-    pylab.figure()
-    pylab.plot([i[1] for i in spikes], [i[0] for i in spikes], ".")
-    pylab.xlabel('Time/ms')
-    pylab.ylabel('spikes')
-    pylab.title('Spikes of Excitatory Neurons')
-    #pylab.show()
-else:
-    print "No spikes received"
+excit_v = excit_data.filter(name="v")[0]
 
-# Make some graphs
-ticks = len(v) / nExcitNeurons
+Figure(
+    Panel(excit_v, ylabel="Membrane potential (mV)"),
+    Panel(excit_data.spiketrains, xlabel="Time (ms)", xticks=True)
+)
 
-# Excitatory neuron current:
-if v != None:
-    pylab.figure()
-    pylab.xlabel('Time/ms')
-    pylab.ylabel('mV')
-    pylab.title('Potential of neuron 1')
-    for pos in range(0, nExcitNeurons, 40):
-        v_for_neuron = v[pos * ticks : (pos + 1) * ticks]
-        pylab.plot([i[1] for i in v_for_neuron],
-                [i[2] for i in v_for_neuron])
 
 pylab.show()
 
-p.end()
 
