@@ -7,8 +7,14 @@ import pynn_spinnaker_recurrent_stdp as r
 import numpy, pylab
 from pyNN.utility.plotting import Figure, Panel
 
+import logging
+logger = logging.getLogger("pynn_spinnaker")
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+
 #p.setup(timestep=1.0, min_delay = 1.0, max_delay = 15.0, spalloc_num_boards=1)
-p.setup(timestep=1.0, min_delay = 1.0, max_delay = 15.0, spinnaker_hostname="192.168.1.1")
+p.setup(timestep=1.0, min_delay=1.0, max_delay=15.0,
+        spinnaker_hostname="192.168.1.1", stop_on_spinnaker=True)
 
 nSourceNeurons = 1 # number of input (excitatory) neurons
 nExcitNeurons  = 1 # number of excitatory neurons in the recurrent memory
@@ -59,10 +65,10 @@ teaching_pop = p.Population(nTeachNeurons, p.SpikeSourceArray(spike_times=teachl
 
 plastic_connection = p.Projection(source_pop, excit_pop,
                                   p.AllToAllConnector(),
-                                  r.RecurrentSTDPSynapse(w_min=0.0, w_max=16.0, A_plus=0.2, A_minus=0.2,
-                                                         accumulator_increase=1.0 / 3.0, accumulator_decrease=1.0 / 6.0,
+                                  r.RecurrentSTDPSynapse(w_min=0.0, w_max=16.0, A_plus=0.29, A_minus=0.29,
+                                                         accumulator_increase=1.0 / 2.0, accumulator_decrease=1.0 / 6.0,
                                                          lambda_pre=10.0, lambda_post=10.0,
-                                                         tau_a=200.0,
+                                                         tau_a=3000.0,
                                                          weight=baseline_excit_weight, delay=1.0),
                                   receptor_type='excitatory')
 
@@ -82,7 +88,7 @@ p.end()
 excit_v = excit_data.filter(name="v")[0]
 
 Figure(
-    Panel(excit_v, ylabel="Membrane potential (mV)"),
+    Panel(excit_v, ylabel="Membrane potential (mV)", yticks=True),
     Panel(excit_data.spiketrains, xlabel="Time (ms)", xticks=True)
 )
 
