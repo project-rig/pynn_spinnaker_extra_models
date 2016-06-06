@@ -45,8 +45,9 @@ private:
   // Typedefines
   //-----------------------------------------------------------------------------
   typedef Pair PlasticSynapse;
-  typedef uint16_t PreTrace;
-  typedef uint16_t PostTrace;
+  typedef uint16_t Trace;
+  typedef Trace PreTrace;
+  typedef Trace PostTrace;
   typedef SynapseProcessor::Plasticity::PostEventHistory<PostTrace, T> PostEventHistory;
   typedef Common::InverseTransformSampleLUT<11, uint16_t, uint32_t, RNG> ExpDistLUT;
 
@@ -96,8 +97,9 @@ public:
       LOG_PRINT(LOG_LEVEL_TRACE, "\t\tAdding pre-synaptic event to trace at tick:%u",
                 tick);
       // Calculate new pre-trace
-      newPreTrace = UpdatePreTrace(tick, lastPreTrace, lastPreTick);
-      
+      newPreTrace = UpdateTrace(tick, lastPreTrace, lastPreTick,
+                                m_PreExpDistLUT);
+
       // Write back updated last presynaptic spike time and trace to row
       dmaBuffer[4] = tick;
       SetPreTrace(dmaBuffer, newPreTrace);
@@ -210,8 +212,9 @@ public:
 
       // Update last trace entry based on spike at tick
       // and add new trace and time to post history
-      PostTrace trace = UpdatePostTrace(tick, postHistory.GetLastTrace(),
-                                        postHistory.GetLastTime());
+      PostTrace trace = UpdateTrace(tick, postHistory.GetLastTrace(),
+                                    postHistory.GetLastTime(),
+                                    m_PostExpDistLUT);
       postHistory.Add(tick, trace);
     }
   }
@@ -261,26 +264,34 @@ private:
   //-----------------------------------------------------------------------------
   // Private methods
   //-----------------------------------------------------------------------------
-  PostTrace UpdatePostTrace(uint32_t, PostTrace, uint32_t)
+  template<typename Dist>
+  PreTrace UpdateTrace(uint32_t tick, Trace lastTrace, uint32_t lastTick,
+    const Dist &expDistLUT)
   {
     // Pick random number and use to draw from exponential distribution
-    uint32_t windowLength = m_PostExpDistLUT.Get(m_RNG);
-    LOG_PRINT(LOG_LEVEL_TRACE, "\tResetting post-window length: %u",
-              windowLength);
+    const uint32_t windowLength = expDistLUT.Get(m_RNG);
 
-    // Return window length
-    return (PostTrace)windowLength;
-  }
+    // If this new window wil actually extend the previous window
+    const uint32_t lastWindowEndTick = lastTick + lastTrace;
+    if((tick + windowLength) > lastWindowEndTick)
+    {
+      LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tResetting current window length %u to %u",
+                lastTrace, windowLength);
 
-  PreTrace UpdatePreTrace(uint32_t, PreTrace, uint32_t)
-  {
-    // Pick random number and use to draw from exponential distribution
-    uint32_t windowLength = m_PreExpDistLUT.Get(m_RNG);
-    LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tResetting pre-window length: %u",
-              windowLength);
+      // Return window length
+      return (Trace)windowLength;
+    }
+    // Otherwise
+    else
+    {
+      // Calculate how much of last window extends beyond this tick
+      const uint32_t remainingWindowLength = lastWindowEndTick - tick;
+      LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tRe-aligning current window length %u to %u",
+                lastTrace, remainingWindowLength);
 
-    // Return window length
-    return (PreTrace)windowLength;
+      // Return remaining window length
+      return (Trace)remainingWindowLength;
+    }
   }
 
   void ApplyPreSpike(uint32_t time,
