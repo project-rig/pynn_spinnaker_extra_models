@@ -96,13 +96,13 @@ class RecurrentSTDPSynapse(StandardSynapseType):
     plasticity_param_map = [
         (lazy_param_map.mars_kiss_64_random_seed, "4i4"),
 
-        ("w_min",                 "i4", lazy_param_map.s2211),
-        ("w_max",                 "i4", lazy_param_map.s2211),
-        ("a_plus",                "i4", lazy_param_map.s2211),
-        ("a_minus",               "i4", lazy_param_map.s2211),
+        ("w_min",                 "i4", lazy_param_map.s2011),
+        ("w_max",                 "i4", lazy_param_map.s2011),
+        ("a_plus",                "i4", lazy_param_map.s2011),
+        ("a_minus",               "i4", lazy_param_map.s2011),
 
-        ("accumulator_increase",  "i4", lazy_param_map.s2211),
-        ("accumulator_decrease",  "i4", lazy_param_map.s2211),
+        ("accumulator_increase",  "i4", lazy_param_map.s2011),
+        ("accumulator_decrease",  "i4", lazy_param_map.s2011),
 
         ("lambda_pre",            "2048i2", integer_exp_dist_its_lut),
         ("lambda_post",           "2048i2", integer_exp_dist_its_lut),
