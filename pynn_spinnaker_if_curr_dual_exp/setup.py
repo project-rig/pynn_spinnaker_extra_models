@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pynn_spinnaker_if_curr_dual_exp",
-    version="0.1",
+    version="0.1.0",
     packages=find_packages(),
     package_data={'pynn_spinnaker_if_curr_dual_exp': ['binaries/*.aplx']},
 
