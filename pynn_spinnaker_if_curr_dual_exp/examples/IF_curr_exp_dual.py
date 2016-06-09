@@ -5,13 +5,11 @@ from pynn_spinnaker_if_curr_dual_exp import IF_curr_dual_exp
 from pyNN.utility.plotting import Figure, Panel
 
 logger = logging.getLogger("pynn_spinnaker")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 # SpiNNaker setup
-sim.setup(timestep=1.0, max_delay=8.0,
-          spinnaker_hostname="192.168.1.1")
-
+sim.setup(timestep=1.0, max_delay=8.0, spalloc_num_boards=1)
 
     
 cell_params = {'tau_m'   : 20.0,   'cm'         : 1.0,    'i_offset'   : 0.0,    'tau_refrac' : 3.0,
@@ -40,34 +38,7 @@ sim.run(200.0)
 # Build panels showing membrane potential
 panels = [Panel(cell.get_data().segments[0].filter(name="v")[0], ylabel="%s membrane potential (mV)" % cell.label)
           for cell in cells]
-
 Figure(*panels, title="Membrane voltages")
 
-'''
-
-# Extract currents and voltages
-recorded_voltages = [d.get_voltage(cell, spinnaker) for cell in cells]
-recorded_currents = [d.get_current(cell, spinnaker) for cell in cells]
-
-#print recorded_voltages
-def plot_trace(trace, axis, title, y_axis_label, colour):
-    axis.plot([t[2] for t in trace], color=colour) 
-    axis.set_xlabel('Time/ms')
-    axis.set_ylabel(y_axis_label)
-    axis.set_title(title)
-    
-figure, axisArray = pylab.subplots(len(cells), 2)
-
-for i, (voltage, current) in enumerate(zip(recorded_voltages, recorded_currents)):
-    plot_trace(voltage, axisArray[i][0], "Cell %u voltage" % i, "Voltage/mV", "blue")
-    plot_trace(current, axisArray[i][1], "Cell %u current" % i, "Current/nA", "blue")
-    '''
 plt.show()
-p.end()
-'''
-if spinnaker:
-    p.end(stop_on_board=True)
-else:
-    p.end()
-
-'''
+sim.end()

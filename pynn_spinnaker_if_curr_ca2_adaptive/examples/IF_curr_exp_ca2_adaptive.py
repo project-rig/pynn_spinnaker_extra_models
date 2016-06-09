@@ -15,7 +15,7 @@ import pynn_spinnaker as sim
 from pynn_spinnaker_if_curr_ca2_adaptive import IF_curr_ca2_adaptive_exp
 
 logger = logging.getLogger("pynn_spinnaker")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
@@ -31,7 +31,7 @@ N = 300
 T = 250
 
 # Setup simulator
-sim.setup(timestep=dt, min_delay=dt, max_delay=dt * 7, spinnaker_hostname="192.168.1.1")
+sim.setup(timestep=dt, min_delay=dt, max_delay=dt * 7, spalloc_num_boards=1)
 
 # Create population of neurons
 cell = sim.Population(N, IF_curr_ca2_adaptive_exp(tau_m=20.0, cm=0.5,
@@ -48,7 +48,6 @@ sim.Projection(spike_source, cell,
                receptor_type="excitatory")
 
 cell.record("spikes")
-# cell.record_gsyn()
 
 sim.run(T)
 
@@ -86,10 +85,6 @@ fig, axes = pylab.subplots(2, sharex=True)
 axes[0].scatter(list(mean_isis.iterkeys()),
                 [1000.0 / i for i in mean_isis.itervalues()], s=2)
 axes[0].set_ylabel("Firing rate/Hz")
-
-# axes[1].scatter(numpy.arange(0.0, T, dt), average_ca2, s=2)
-# axes[1].set_ylabel("CA2/mA")
-# axes[1].set_ylim((0.0, numpy.amax(average_ca2) * 1.25))
 
 axes[1].scatter(list(isi_cv.iterkeys()), list(isi_cv.itervalues()), s=2)
 axes[1].set_ylabel("Coefficient of ISI variance")
