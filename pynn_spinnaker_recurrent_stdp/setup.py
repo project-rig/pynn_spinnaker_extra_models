@@ -33,6 +33,6 @@ setup(
     keywords="spinnaker pynn neural simulation",
 
     # Requirements
-    install_requires=["pynn_spinnaker>=0.2"],
+    install_requires=["pynn_spinnaker>=0.3"],
     zip_safe=False,  # Partly for performance reasons
 )
