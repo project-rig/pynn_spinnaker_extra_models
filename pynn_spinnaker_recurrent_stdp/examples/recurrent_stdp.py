@@ -12,9 +12,7 @@ logger = logging.getLogger("pynn_spinnaker")
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
-#p.setup(timestep=1.0, min_delay = 1.0, max_delay = 15.0, spalloc_num_boards=1)
-p.setup(timestep=1.0, min_delay=1.0, max_delay=15.0,
-        spinnaker_hostname="192.168.1.1", stop_on_spinnaker=True)
+p.setup(timestep=1.0, min_delay = 1.0, max_delay = 15.0, spalloc_num_boards=1)
 
 nSourceNeurons = 1 # number of input (excitatory) neurons
 nExcitNeurons  = 1 # number of excitatory neurons in the recurrent memory
@@ -65,14 +63,17 @@ teaching_pop = p.Population(nTeachNeurons, p.SpikeSourceArray(spike_times=teachl
 
 plastic_connection = p.Projection(source_pop, excit_pop,
                                   p.AllToAllConnector(),
-                                  r.RecurrentSTDPSynapse(w_min=0.0, w_max=16.0, A_plus=0.29, A_minus=0.29,
+                                  r.RecurrentSTDPSynapse(w_min=0.0, w_max=16.0, A_plus=0.3, A_minus=0.3,
                                                          accumulator_increase=1.0 / 2.0, accumulator_decrease=1.0 / 6.0,
                                                          lambda_pre=10.0, lambda_post=10.0,
                                                          tau_a=3000.0,
                                                          weight=baseline_excit_weight, delay=1.0),
                                   receptor_type='excitatory')
 
-p.Projection(teaching_pop, excit_pop, p.OneToOneConnector(), p.StaticSynapse(weight=weight_to_force_firing, delay=1.0), receptor_type='excitatory')
+p.Projection(teaching_pop, excit_pop,
+             p.OneToOneConnector(),
+             p.StaticSynapse(weight=weight_to_force_firing, delay=1.0),
+             receptor_type='excitatory')
 
 excit_pop.record("v")
 excit_pop.record("spikes")
