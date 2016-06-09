@@ -105,10 +105,6 @@ public:
       SetPreTrace(dmaBuffer, newPreTrace);
     }
 
-    // Calculate time since last update
-    const uint32_t timeSinceLastUpdate = tick - lastUpdateTick;
-    const S2011 accumulatorDecay = m_TauALUT.Get(timeSinceLastUpdate);
-
     // Extract first plastic and control words; and loop through synapses
     uint32_t count = dmaBuffer[0];
     PlasticSynapse *plasticWords = GetPlasticWords(dmaBuffer);
@@ -127,9 +123,6 @@ public:
       // Extract accumulator and weight components of plastic word
       S2011 accumulator = (int32_t)plasticWords->m_HalfWords[1];
       int32_t weight = (int32_t)plasticWords->m_HalfWords[0];
-
-      // Apply accumulator decay
-      accumulator = Mul16S2011(accumulator, accumulatorDecay);
 
       // Apply axonal delay to last presynaptic spike and update tick
       const uint32_t delayedLastPreTick = lastPreTick + delayAxonal;
@@ -154,6 +147,12 @@ public:
       {
         const uint32_t delayedPostTick = postWindow.GetNextTime() + delayDendritic;
 
+        // Decay accumulator from time of last update to time of this post-spike
+        accumulator = Mul16S2011(accumulator,
+                                 m_TauALUT.Get(delayedPostTick - delayedLastUpdateTick));
+        LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tDecaying accumulator over %u ticks to %d",
+                  delayedPostTick - delayedLastUpdateTick, accumulator);
+
         LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tApplying post-synaptic event at delayed tick:%u",
                   delayedPostTick);
 
@@ -162,22 +161,30 @@ public:
                        delayedLastPreTick, lastPreTrace,
                        accumulator, weight);
 
-        // Update
+        // Update time of last update
         delayedLastUpdateTick = delayedPostTick;
 
         // Go onto next event
         postWindow.Next(delayedPostTick);
       }
 
+      // Calculate time of update including axonal delay
+      const uint32_t delayedUpdateTick = tick + delayAxonal;
+
+      // Decay accumulator from time of last update to time of update
+      accumulator = Mul16S2011(accumulator,
+                               m_TauALUT.Get(delayedUpdateTick - delayedLastUpdateTick));
+      LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tDecaying accumulator over %u ticks to %d",
+                delayedUpdateTick - delayedLastUpdateTick, accumulator);
+
       // If this isn't a flush
       if(!flush)
       {
-        const uint32_t delayedPreTick = tick + delayAxonal;
         LOG_PRINT(LOG_LEVEL_TRACE, "\t\t\tApplying pre-synaptic event at tick:%u, last post tick:%u",
-                  delayedPreTick, postWindow.GetPrevTime());
+                  delayedUpdateTick, postWindow.GetPrevTime());
 
         // Apply pre-synaptic spike to synapse
-        ApplyPreSpike(delayedPreTick,
+        ApplyPreSpike(delayedUpdateTick,
                      postWindow.GetPrevTime(), postWindow.GetPrevTrace(),
                      accumulator, weight);
       }
