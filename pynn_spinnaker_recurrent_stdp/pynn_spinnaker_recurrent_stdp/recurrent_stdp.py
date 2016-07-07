@@ -92,8 +92,17 @@ class RecurrentSTDPSynapse(StandardSynapseType):
 
         ("tau_a",                 "tau_a"),
     )
+    
+    def _get_minimum_delay(self):
+        d = state.min_delay
+        if d == "auto":
+            d = state.dt
+        return d
 
-    plasticity_param_map = [
+    # --------------------------------------------------------------------------
+    # Internal SpiNNaker properties
+    # --------------------------------------------------------------------------
+    _plasticity_param_map = [
         (lazy_param_map.mars_kiss_64_random_seed, "4i4"),
 
         ("w_min",                 "i4", lazy_param_map.s2011),
@@ -111,48 +120,42 @@ class RecurrentSTDPSynapse(StandardSynapseType):
                                                     num_entries=1500, time_shift=5)),
     ]
 
-    comparable_param_names = ("w_min", "w_max", "A_plus", "A_minus",
+    _comparable_param_names = ("w_min", "w_max", "A_plus", "A_minus",
                               "accumulator_increase", "accumulator_decrease",
                               "lambda_pre", "lambda_post", "tau_a")
 
     # How many post-synaptic neurons per core can a
     # SpiNNaker synapse_processor of this type handle
-    max_post_neurons_per_core = 256
+    _max_post_neurons_per_core = 256
 
     # Assuming relatively long row length, at what rate can a SpiNNaker
     # synapse_processor of this type process synaptic events (hZ)
-    max_synaptic_event_rate = 0.6E6
+    _max_synaptic_event_rate = 0.6E6
 
     # Recurrent STDP requires a synaptic matrix region
     # with support for extra per-synapse data
-    synaptic_matrix_region_class = regions.ExtendedPlasticSynapticMatrix
+    _synaptic_matrix_region_class = regions.ExtendedPlasticSynapticMatrix
 
     # How many timesteps of delay can DTCM ring-buffer handle
     # **NOTE** only 7 timesteps worth of delay can be handled by
     # 8 element delay buffer - The last element is purely for output
-    max_dtcm_delay_slots = 7
+    _max_dtcm_delay_slots = 7
 
     # Static weights are unsigned
-    signed_weight = False
+    _signed_weight = False
 
     # Recurrent STDP synapses require post-synaptic
     # spikes back-propagated to them
-    requires_back_propagation = True
+    _requires_back_propagation = True
 
     # The presynaptic state for recurrent STDP synapses consists of a
     # uint32 containing time of last update a uint32 containing time of last
     # presynaptic spike and uint16 containing presynaptic window length
-    pre_state_bytes = 10
+    _pre_state_bytes = 10
 
     # Each synape has an additional 16-bit trace: accumulator
-    synapse_trace_bytes = 2
+    _synapse_trace_bytes = 2
 
-    def _get_minimum_delay(self):
-        d = state.min_delay
-        if d == "auto":
-            d = state.dt
-        return d
-
-    def update_weight_range(self, weight_range):
+    def _update_weight_range(self, weight_range):
         weight_range.update(get_homogeneous_param(self.parameter_space, "w_max"))
         weight_range.update(get_homogeneous_param(self.parameter_space, "w_min"))

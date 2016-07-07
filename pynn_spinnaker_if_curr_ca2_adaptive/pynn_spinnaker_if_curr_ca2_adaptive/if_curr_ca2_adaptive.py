@@ -96,19 +96,22 @@ class IF_curr_ca2_adaptive_exp(StandardCellType):
     }
     receptor_types = ("excitatory", "inhibitory")
 
-    # How many of these neurons per core can
-    # a SpiNNaker neuron processor handle
-    max_neurons_per_core = 1024
-
-    neuron_region_class = regions.Neuron
-    
-    directly_connectable = False
-
     translations = deepcopy(if_curr_ca2_adaptive_neuron_translations)
     translations.update(exp_synapse_translations)
 
-    neuron_immutable_param_map = if_curr_ca2_adaptive_neuron_immutable_param_map
-    neuron_mutable_param_map = if_curr_ca2_adaptive_neuron_mutable_param_map
+    # --------------------------------------------------------------------------
+    # Internal SpiNNaker properties
+    # --------------------------------------------------------------------------
+    # How many of these neurons per core can
+    # a SpiNNaker neuron processor handle
+    _max_neurons_per_core = 1024
 
-    synapse_immutable_param_map = exp_synapse_immutable_param_map
-    synapse_mutable_param_map = exp_synapse_curr_mutable_param_map
+    _neuron_region_class = regions.Neuron
+    
+    _directly_connectable = False
+
+    _neuron_immutable_param_map = if_curr_ca2_adaptive_neuron_immutable_param_map
+    _neuron_mutable_param_map = if_curr_ca2_adaptive_neuron_mutable_param_map
+
+    _synapse_immutable_param_map = exp_synapse_immutable_param_map
+    _synapse_mutable_param_map = exp_synapse_curr_mutable_param_map
