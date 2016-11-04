@@ -119,6 +119,6 @@ class IF_curr_ca2_adaptive_exp(StandardCellType):
     # --------------------------------------------------------------------------
     # How many of these neurons per core can
     # a SpiNNaker neuron processor handle
-    calc_max_neurons_per_core = partial(calc_max_neurons_per_core,
-                                        neuron_update_cpu_cycles=143,
-                                        synapse_shape_cpu_cycles=28)
+    _calc_max_neurons_per_core = partial(calc_max_neurons_per_core,
+                                         neuron_update_cpu_cycles=175,
+                                         synapse_shape_cpu_cycles=28)

@@ -15,7 +15,7 @@ import pynn_spinnaker as sim
 from pynn_spinnaker_if_curr_ca2_adaptive import IF_curr_ca2_adaptive_exp
 
 logger = logging.getLogger("pynn_spinnaker")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler())
 
 
@@ -31,7 +31,7 @@ N = 300
 T = 250
 
 # Setup simulator
-sim.setup(timestep=dt, min_delay=dt, max_delay=dt * 7, spalloc_num_boards=1)
+sim.setup(timestep=dt, min_delay=dt, max_delay=dt * 7)
 
 # Create population of neurons
 cell = sim.Population(N, IF_curr_ca2_adaptive_exp(tau_m=20.0, cm=0.5,

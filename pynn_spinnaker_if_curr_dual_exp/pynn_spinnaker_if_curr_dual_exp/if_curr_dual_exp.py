@@ -104,4 +104,4 @@ class IF_curr_dual_exp(StandardCellType):
     # a SpiNNaker neuron processor handle
     _calc_max_neurons_per_core = partial(calc_max_neurons_per_core,
                                          neuron_update_cpu_cycles=143,
-                                         synapse_shape_cpu_cycles=28)
+                                         synapse_shape_cpu_cycles=47)
