@@ -15,7 +15,7 @@ import pynn_spinnaker as sim
 from pynn_spinnaker_if_curr_ca2_adaptive import IF_curr_ca2_adaptive_exp
 
 logger = logging.getLogger("pynn_spinnaker")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
