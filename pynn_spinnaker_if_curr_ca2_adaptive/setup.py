@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pynn_spinnaker_if_curr_ca2_adaptive",
-    version="0.1.0",
+    version="0.2.0",
     packages=find_packages(),
     package_data={'pynn_spinnaker_if_curr_ca2_adaptive': ['binaries/*.aplx']},
 
@@ -33,7 +33,7 @@ setup(
     keywords="spinnaker pynn neural simulation",
 
     # Requirements
-    install_requires=["pynn_spinnaker>=0.2"],
+    install_requires=["pynn_spinnaker>=0.4.0, <0.5.0"],
     zip_safe=False,  # Partly for performance reasons
 
     # Scripts
